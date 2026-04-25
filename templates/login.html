@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulseRate — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --dark: #080b0f;
+    --surface: #0f1318;
+    --surface2: #161c24;
+    --border: rgba(201,168,76,0.18);
+    --text: #e8e2d6;
+    --muted: #7a7469;
+    --error: #e05252;
+    --success: #52c97a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── LEFT PANEL ── */
+  .left-panel {
+    width: 55%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4rem;
+    overflow: hidden;
+  }
+  .left-panel::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 50%, rgba(201,168,76,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 80% at 80% 20%, rgba(201,168,76,0.04) 0%, transparent 50%);
+  }
+  .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    animation: orb-drift 8s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 400px; height: 400px; background: rgba(201,168,76,0.06); top: -100px; left: -100px; }
+  .orb-2 { width: 300px; height: 300px; background: rgba(201,168,76,0.04); bottom: -50px; right: -50px; animation-delay: -4s; }
+  @keyframes orb-drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.1); } }
+
+  .brand {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 3rem;
+  }
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+  .brand-tagline {
+    font-size: 0.85rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .hero-text {
+    position: relative; z-index: 2;
+  }
+  .hero-text h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.8rem, 4vw, 4.5rem);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+  .hero-text h1 em {
+    font-style: normal;
+    color: var(--gold);
+  }
+  .hero-text p {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 420px;
+    margin-bottom: 3rem;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 2.5rem;
+    position: relative; z-index: 2;
+  }
+  .stat-item { }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    width: 45%;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    border-left: 1px solid var(--border);
+    position: relative;
+  }
+  .right-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .form-container {
+    width: 100%;
+    max-width: 380px;
+  }
+  .form-header {
+    margin-bottom: 2.5rem;
+  }
+  .form-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  .form-header p {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .form-header p a {
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .form-header p a:hover { text-decoration: underline; }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .form-group .input-wrap {
+    position: relative;
+  }
+  .form-group .input-icon {
+    position: absolute;
+    left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .form-group input {
+    width: 100%;
+    padding: 13px 14px 13px 42px;
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-group input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+  }
+  .form-group input::placeholder { color: var(--muted); }
+
+  .forgot-link {
+    text-align: right;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+  }
+  .forgot-link a { color: var(--gold); text-decoration: none; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    border: none;
+    border-radius: 10px;
+    color: #080b0f;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-primary.loading {
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .btn-primary .spinner {
+    display: none;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #080b0f;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+  }
+  .btn-primary.loading .btn-label { display: none; }
+  .btn-primary.loading .spinner { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .divider {
+    display: flex; align-items: center;
+    gap: 1rem; margin: 1.5rem 0;
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--border);
+  }
+
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+    display: none;
+    animation: slide-in 0.3s ease;
+  }
+  .alert.error { background: rgba(224,82,82,0.1); border: 1px solid rgba(224,82,82,0.3); color: #e05252; display: block; }
+  .alert.success { background: rgba(82,201,122,0.1); border: 1px solid rgba(82,201,122,0.3); color: #52c97a; display: block; }
+  @keyframes slide-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 768px) {
+    .left-panel { display: none; }
+    .right-panel { width: 100%; border-left: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="left-panel">
+  <div class="grid-bg"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="brand">
+    <div class="brand-logo">
+      <div class="logo-icon">⚡</div>
+      <span class="brand-name">PulseRate</span>
+    </div>
+    <p class="brand-tagline">Real-Time Feedback Intelligence</p>
+  </div>
+
+  <div class="hero-text">
+    <h1>Listen to what <em>really</em> matters.</h1>
+    <p>Capture live customer sentiment, track satisfaction trends, and transform feedback into decisions — all in real time.</p>
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num">98%</div>
+        <div class="stat-label">Satisfaction Rate</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">2.4s</div>
+        <div class="stat-label">Live Refresh</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Scalable</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="right-panel">
+  <div class="form-container">
+    <div class="form-header">
+      <h2>Welcome back</h2>
+      <p>Don't have an account? <a href="/register">Create one free</a></p>
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉</span>
+          <input type="email" id="email" placeholder="you@company.com" required autocomplete="email">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" placeholder="Your password" required autocomplete="current-password">
+        </div>
+        <div class="forgot-link"><a href="#">Forgot password?</a></div>
+      </div>
+
+      <button type="submit" class="btn-primary" id="loginBtn">
+        <span class="btn-label">Sign In</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div id="alertBox" class="alert"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const alert = document.getElementById('alertBox');
+  alert.className = 'alert';
+  btn.classList.add('loading');
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert.className = 'alert success';
+      alert.textContent = 'Login successful! Redirecting…';
+      setTimeout(() => window.location.href = '/dashboard', 900);
+    } else {
+      alert.className = 'alert error';
+      alert.textContent = data.error || 'Login failed.';
+      btn.classList.remove('loading');
+    }
+  } catch {
+    alert.className = 'alert error';
+    alert.textContent = 'Network error. Please try again.';
+    btn.classList.remove('loading');
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulseRate — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dim: rgba(201,168,76,0.12);
+  --dark: #070a0d;
+  --surface: #0d1117;
+  --surface2: #141a22;
+  --surface3: #1b2330;
+  --border: rgba(201,168,76,0.14);
+  --border2: rgba(255,255,255,0.06);
+  --text: #e2ddd6;
+  --muted: #6e6b64;
+  --success: #4ec994;
+  --warning: #e0a052;
+  --error: #e05252;
+  --info: #5298e0;
+  --sidebar-w: 260px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--dark);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ─────────────── SIDEBAR ─────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
+.sidebar-header {
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.brand-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.sidebar-user {
+  padding: 1.25rem 1.5rem;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--border2);
+}
+.user-avatar {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--gold-dim), rgba(201,168,76,0.25));
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  font-weight: 500;
+  color: var(--gold);
+}
+.user-info .user-name { font-size: 0.875rem; font-weight: 500; }
+.user-info .user-role {
+  font-size: 0.72rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+
+.live-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  background: rgba(78,201,148,0.1);
+  border: 1px solid rgba(78,201,148,0.25);
+  border-radius: 20px;
+  font-size: 0.7rem; color: var(--success);
+  letter-spacing: 0.06em;
+  margin: 1rem 1.5rem 0.5rem;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
+.nav-section-label {
+  padding: 0.8rem 1.5rem 0.4rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.nav-list { list-style: none; padding: 0 0.75rem; }
+.nav-item a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+}
+.nav-item a:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active a {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.2);
+}
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: rgba(201,168,76,0.15);
+  border-radius: 20px;
+  font-size: 0.7rem;
+  color: var(--gold);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border2);
+}
+.logout-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 12px;
+  background: none; border: none;
+  border-radius: 8px;
+  color: var(--muted); font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.logout-btn:hover { background: rgba(224,82,82,0.1); color: var(--error); }
+
+/* ─────────────── MAIN ─────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* TOPBAR */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(7,10,13,0.8);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border2);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem; font-weight: 400;
+}
+.topbar-right {
+  display: flex; align-items: center; gap: 1rem;
+}
+.topbar-time {
+  font-size: 0.8rem; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.notify-btn {
+  width: 36px; height: 36px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.notify-btn:hover { border-color: var(--gold); }
+.notify-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 7px; height: 7px;
+  background: var(--gold);
+  border-radius: 50%;
+  border: 1.5px solid var(--dark);
+}
+
+/* CONTENT */
+.content { padding: 2rem; flex: 1; }
+
+/* SECTIONS */
+.section { display: none; animation: fade-in 0.3s ease; }
+.section.active { display: block; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* SECTION HEADER */
+.section-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+.section-header h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem; font-weight: 300;
+}
+.section-header p { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+
+/* ── KPI CARDS ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 1.4rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.kpi-card:hover { border-color: var(--border); transform: translateY(-2px); }
+.kpi-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent, var(--gold));
+  opacity: 0.5;
+}
+.kpi-label {
+  font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 0.6rem;
+}
+.kpi-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.4rem; font-weight: 600;
+  line-height: 1;
+  color: var(--text);
+}
+.kpi-sub {
+  font-size: 0.78rem; color: var(--muted); margin-top: 0.4rem;
+  display: flex; align-items: center; gap: 4px;
+}
+.kpi-icon {
+  position: absolute; right: 1.25rem; top: 50%; transform: translateY(-50%);
+  font-size: 2.5rem; opacity: 0.07;
+}
+.kpi-trend { font-size: 0.75rem; padding: 2px 8px; border-radius: 20px; }
+.kpi-trend.up { background: rgba(78,201,148,0.1); color: var(--success); }
+.kpi-trend.neutral { background: rgba(82,152,224,0.1); color: var(--info); }
+
+/* ── CHARTS ── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+.chart-title {
+  font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 1.25rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chart-title span { color: var(--text); font-size: 0.95rem; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.chart-wrap { position: relative; height: 220px; }
+
+/* ── CATEGORY BARS ── */
+.cat-list { display: flex; flex-direction: column; gap: 1rem; }
+.cat-row { }
+.cat-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.cat-name { font-size: 0.82rem; color: var(--text); }
+.cat-score { font-size: 0.82rem; color: var(--gold); font-weight: 500; }
+.cat-bar-bg {
+  height: 6px; background: var(--surface3);
+  border-radius: 3px; overflow: hidden;
+}
+.cat-bar-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  transition: width 0.8s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── FEEDBACK FEED ── */
+.feed-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.feed-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.feed-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.feed-header-title { font-size: 0.85rem; font-weight: 500; }
+.feed-body { max-height: 320px; overflow-y: auto; }
+.feed-body::-webkit-scrollbar { width: 4px; }
+.feed-body::-webkit-scrollbar-track { background: transparent; }
+.feed-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.feed-item {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border2);
+  animation: feed-in 0.4s ease;
+}
+.feed-item:last-child { border-bottom: none; }
+@keyframes feed-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+.feed-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+.feed-name { font-size: 0.82rem; font-weight: 500; }
+.feed-time { font-size: 0.7rem; color: var(--muted); }
+.feed-cat { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
+.feed-comment { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+.stars { display: flex; gap: 2px; margin-bottom: 4px; }
+.star { font-size: 12px; }
+.star.filled { color: var(--gold); }
+.star.empty { color: var(--surface3); }
+
+/* ── SUBMIT FEEDBACK ── */
+.submit-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.5rem;
+}
+.submit-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 1.75rem;
+}
+.submit-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 400;
+  margin-bottom: 0.4rem;
+}
+.submit-card p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+
+.form-group { margin-bottom: 1.2rem; }
+.form-group label {
+  display: block;
+  font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 0.45rem;
+}
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-group select:focus,
+.form-group textarea:focus { border-color: var(--gold); }
+.form-group select option { background: var(--surface2); }
+.form-group textarea { resize: vertical; min-height: 100px; }
+
+/* STAR RATING INPUT */
+.star-rating-input {
+  display: flex; gap: 6px; flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+.star-rating-input input { display: none; }
+.star-rating-input label {
+  font-size: 2rem; cursor: pointer;
+  color: var(--surface3);
+  transition: color 0.15s, transform 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.star-rating-input label:hover,
+.star-rating-input label:hover ~ label,
+.star-rating-input input:checked ~ label {
+  color: var(--gold);
+}
+.star-rating-input label:hover { transform: scale(1.15); }
+
+.btn-submit {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border: none; border-radius: 10px;
+  color: #070a0d;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 0.5rem;
+}
+.btn-submit:hover { opacity: 0.88; }
+.btn-submit:disabled { opacity: 0.5; pointer-events: none; }
+
+/* RECENT CATEGORY SCORES */
+.score-grid {
+  display: flex; flex-direction: column; gap: 0.85rem;
+}
+.score-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+}
+.score-emoji { font-size: 20px; width: 28px; text-align: center; }
+.score-name { font-size: 0.82rem; flex: 1; }
+.score-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem; font-weight: 600;
+  color: var(--gold);
+}
+.score-count { font-size: 0.72rem; color: var(--muted); }
+
+/* TOAST */
+.toast-wrap {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  z-index: 9999;
+}
+.toast {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  min-width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  animation: toast-in 0.35s cubic-bezier(.4,0,.2,1);
+  display: flex; align-items: center; gap: 10px;
+}
+.toast.success { background: rgba(78,201,148,0.15); border: 1px solid rgba(78,201,148,0.3); color: var(--success); }
+.toast.error { background: rgba(224,82,82,0.15); border: 1px solid rgba(224,82,82,0.3); color: var(--error); }
+.toast.info { background: rgba(82,152,224,0.15); border: 1px solid rgba(82,152,224,0.3); color: var(--info); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* MY FEEDBACK TABLE */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  padding: 12px 1.25rem;
+  text-align: left;
+  font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+}
+.data-table td {
+  padding: 13px 1.25rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* SENTIMENT CHIPS */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 500;
+}
+.chip.excellent { background: rgba(78,201,148,0.12); color: var(--success); }
+.chip.good { background: rgba(82,152,224,0.12); color: var(--info); }
+.chip.neutral { background: rgba(201,168,76,0.12); color: var(--gold); }
+.chip.poor { background: rgba(224,160,82,0.12); color: var(--warning); }
+.chip.terrible { background: rgba(224,82,82,0.12); color: var(--error); }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; padding: 3rem;
+  color: var(--muted); font-size: 0.9rem;
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+
+/* ANALYTICS SECTION */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.full-chart-wrap { position: relative; height: 280px; }
+
+/* ALERT INLINE */
+.inline-alert {
+  padding: 10px 14px; border-radius: 8px;
+  font-size: 0.82rem; margin-bottom: 1rem;
+}
+.inline-alert.success { background: rgba(78,201,148,0.1); border: 1px solid rgba(78,201,148,0.25); color: var(--success); }
+.inline-alert.error { background: rgba(224,82,82,0.1); border: 1px solid rgba(224,82,82,0.25); color: var(--error); }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .charts-row { grid-template-columns: 1fr; }
+  .feed-section { grid-template-columns: 1fr; }
+  .submit-grid { grid-template-columns: 1fr; }
+  .analytics-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-icon">⚡</div>
+    <span class="brand-name">PulseRate</span>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="user-avatar" id="userAvatar">?</div>
+    <div class="user-info">
+      <div class="user-name" id="userName">Loading…</div>
+      <div class="user-role">Customer</div>
+    </div>
+  </div>
+
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    LIVE SYNC ACTIVE
+  </div>
+
+  <p class="nav-section-label">Overview</p>
+  <ul class="nav-list">
+    <li class="nav-item active" data-section="overview">
+      <a><span class="nav-icon">📊</span> Dashboard</a>
+    </li>
+    <li class="nav-item" data-section="analytics">
+      <a><span class="nav-icon">📈</span> Analytics</a>
+    </li>
+    <li class="nav-item" data-section="feed">
+      <a><span class="nav-icon">📡</span> Live Feed <span class="nav-badge" id="feedCount">0</span></a>
+    </li>
+  </ul>
+
+  <p class="nav-section-label">Actions</p>
+  <ul class="nav-list">
+    <li class="nav-item" data-section="submit">
+      <a><span class="nav-icon">✍️</span> Submit Feedback</a>
+    </li>
+    <li class="nav-item" data-section="history">
+      <a><span class="nav-icon">📋</span> My History</a>
+    </li>
+  </ul>
+
+  <p class="nav-section-label">Account</p>
+  <ul class="nav-list">
+    <li class="nav-item" data-section="settings">
+      <a><span class="nav-icon">⚙️</span> Settings</a>
+    </li>
+  </ul>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="window.location.href='/logout'">
+      <span>🚪</span> Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard Overview</div>
+    <div class="topbar-right">
+      <div class="topbar-time" id="clockEl">--:--:--</div>
+      <div class="notify-btn" title="Notifications">
+        🔔<div class="notify-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ════ OVERVIEW ════ -->
+    <section class="section active" id="section-overview">
+      <div class="section-header">
+        <div>
+          <h2>Welcome back, <span id="greetName" style="color:var(--gold)">—</span></h2>
+          <p>Real-time feedback intelligence · Live averages update automatically</p>
+        </div>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:var(--gold)">
+          <div class="kpi-label">Total Feedback</div>
+          <div class="kpi-value" id="kpiTotal">—</div>
+          <div class="kpi-sub"><span class="kpi-trend neutral" id="kpiTotalTrend">Live</span></div>
+          <div class="kpi-icon">📋</div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--success)">
+          <div class="kpi-label">Live Avg Rating</div>
+          <div class="kpi-value" id="kpiAvg">—</div>
+          <div class="kpi-sub">out of 5.0</div>
+          <div class="kpi-icon">⭐</div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--info)">
+          <div class="kpi-label">Total Users</div>
+          <div class="kpi-value" id="kpiUsers">—</div>
+          <div class="kpi-sub"><span class="kpi-trend up">↑ Growing</span></div>
+          <div class="kpi-icon">👥</div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--warning)">
+          <div class="kpi-label">Categories Rated</div>
+          <div class="kpi-value" id="kpiCats">—</div>
+          <div class="kpi-sub">active categories</div>
+          <div class="kpi-icon">🏷️</div>
+        </div>
+      </div>
+
+      <!-- TREND CHART + CATEGORY BREAKDOWN -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Rating Trend <span>30-day Average</span></div>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">By Category <span>Avg Scores</span></div>
+          <div class="cat-list" id="catList">
+            <div class="empty-state"><div class="empty-icon">📊</div>No data yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEED + DONUT -->
+      <div class="feed-section">
+        <div class="feed-card">
+          <div class="feed-header">
+            <div class="feed-header-title">🔴 Live Feedback Feed</div>
+            <div class="live-badge" style="margin:0"><div class="live-dot"></div>LIVE</div>
+          </div>
+          <div class="feed-body" id="liveFeed">
+            <div class="empty-state"><div class="empty-icon">📡</div>Waiting for feedback…</div>
+          </div>
+        </div>
+        <div class="feed-card">
+          <div class="feed-header"><div class="feed-header-title">📊 Rating Distribution</div></div>
+          <div style="padding:1.25rem">
+            <div class="chart-wrap" style="height:200px"><canvas id="donutChart"></canvas></div>
+          </div>
+          <div style="padding:0 1.25rem 1.25rem">
+            <div id="distributionBars"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ ANALYTICS ════ -->
+    <section class="section" id="section-analytics">
+      <div class="section-header">
+        <div><h2>Analytics</h2><p>Deep-dive into ratings, trends, and category performance</p></div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:1.25rem">
+        <div class="kpi-card"><div class="kpi-label">Best Category</div><div class="kpi-value" id="bestCat" style="font-size:1.3rem;margin-top:2px">—</div><div class="kpi-icon">🏆</div></div>
+        <div class="kpi-card"><div class="kpi-label">5-Star Count</div><div class="kpi-value" id="fiveStarCount">—</div><div class="kpi-icon">⭐</div></div>
+        <div class="kpi-card"><div class="kpi-label">Positive Sentiment</div><div class="kpi-value" id="positiveRate">—</div><div class="kpi-icon">😊</div></div>
+        <div class="kpi-card"><div class="kpi-label">Avg This Month</div><div class="kpi-value" id="monthAvg">—</div><div class="kpi-icon">📅</div></div>
+      </div>
+      <div class="analytics-grid">
+        <div class="chart-card">
+          <div class="chart-title">Category Performance <span>Bar Chart</span></div>
+          <div class="full-chart-wrap"><canvas id="barChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Rating Distribution <span>All Time</span></div>
+          <div class="full-chart-wrap"><canvas id="polarChart"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-top:1rem">
+        <div class="chart-title">Trend Over Time <span>Daily Avg Rating</span></div>
+        <div style="position:relative;height:240px"><canvas id="lineChart2"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ════ LIVE FEED ════ -->
+    <section class="section" id="section-feed">
+      <div class="section-header">
+        <div><h2>Live Feed</h2><p>All incoming feedback in real time</p></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User</th><th>Category</th><th>Rating</th><th>Comment</th><th>Sentiment</th><th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="feedTable">
+            <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📡</div>No feedback yet</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════ SUBMIT FEEDBACK ════ -->
+    <section class="section" id="section-submit">
+      <div class="section-header">
+        <div><h2>Submit Feedback</h2><p>Rate your experience and help us improve</p></div>
+      </div>
+      <div class="submit-grid">
+        <div class="submit-card">
+          <h3>Share your experience</h3>
+          <p>Your feedback is processed live and updates dashboards instantly.</p>
+
+          <div id="submitAlert"></div>
+
+          <div class="form-group">
+            <label>Category</label>
+            <select id="fbCategory">
+              <option value="">— Select a category —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.name }}">{{ cat.icon }} {{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Your Rating</label>
+            <div class="star-rating-input">
+              <input type="radio" name="rating" id="r5" value="5"><label for="r5">★</label>
+              <input type="radio" name="rating" id="r4" value="4"><label for="r4">★</label>
+              <input type="radio" name="rating" id="r3" value="3"><label for="r3">★</label>
+              <input type="radio" name="rating" id="r2" value="2"><label for="r2">★</label>
+              <input type="radio" name="rating" id="r1" value="1"><label for="r1">★</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Comment <span style="color:var(--muted);font-size:.7rem">(optional)</span></label>
+            <textarea id="fbComment" placeholder="Tell us more about your experience…"></textarea>
+          </div>
+
+          <button class="btn-submit" id="submitBtn" onclick="submitFeedback()">
+            Submit Feedback →
+          </button>
+        </div>
+
+        <div class="submit-card" style="background:var(--surface2)">
+          <h3>Live Scores</h3>
+          <p>Current average ratings per category</p>
+          <div class="score-grid" id="scoreGrid">
+            <div class="empty-state" style="padding:2rem"><div class="empty-icon">📊</div>No data yet</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ HISTORY ════ -->
+    <section class="section" id="section-history">
+      <div class="section-header">
+        <div><h2>My History</h2><p>All feedback you've submitted</p></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Category</th><th>Rating</th><th>Comment</th><th>Sentiment</th><th>Date</th></tr>
+          </thead>
+          <tbody id="historyTable">
+            <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div>No history yet</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════ SETTINGS ════ -->
+    <section class="section" id="section-settings">
+      <div class="section-header">
+        <div><h2>Settings</h2><p>Manage your account preferences</p></div>
+      </div>
+      <div class="submit-grid">
+        <div class="submit-card">
+          <h3>Account Info</h3>
+          <p>Your profile details</p>
+          <div class="form-group" style="margin-top:1rem">
+            <label>Full Name</label>
+            <div style="padding:11px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;font-size:.875rem" id="settingsName">—</div>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <div style="padding:11px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;font-size:.875rem" id="settingsEmail">—</div>
+          </div>
+          <div class="form-group">
+            <label>Company</label>
+            <div style="padding:11px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;font-size:.875rem" id="settingsCompany">—</div>
+          </div>
+        </div>
+        <div class="submit-card" style="background:var(--surface2)">
+          <h3>Preferences</h3>
+          <p>Notification & display options</p>
+          <div style="margin-top:1.5rem;display:flex;flex-direction:column;gap:1rem">
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:.875rem">
+              <input type="checkbox" checked style="accent-color:var(--gold)"> Live feed notifications
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:.875rem">
+              <input type="checkbox" checked style="accent-color:var(--gold)"> Sound alerts for new feedback
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:.875rem">
+              <input type="checkbox" style="accent-color:var(--gold)"> Weekly summary emails
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:.875rem">
+              <input type="checkbox" checked style="accent-color:var(--gold)"> Auto-refresh dashboard
+            </label>
+          </div>
+          <button class="btn-submit" style="margin-top:2rem" onclick="toast('Preferences saved!','success')">Save Preferences</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ─── USER SESSION ───
+const USER = {{ user | tojson }};
+
+// ─── INIT ───
+document.getElementById('userAvatar').textContent = USER.name ? USER.name[0].toUpperCase() : '?';
+document.getElementById('userName').textContent = USER.name || 'User';
+document.getElementById('greetName').textContent = USER.name ? USER.name.split(' ')[0] : '';
+document.getElementById('settingsName').textContent = USER.name || '—';
+document.getElementById('settingsEmail').textContent = USER.email || '—';
+document.getElementById('settingsCompany').textContent = USER.company || 'Not specified';
+
+// ─── CLOCK ───
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockEl').textContent = now.toLocaleTimeString();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── NAV ───
+const sections = {
+  'overview': 'Dashboard Overview',
+  'analytics': 'Analytics',
+  'feed': 'Live Feed',
+  'submit': 'Submit Feedback',
+  'history': 'My History',
+  'settings': 'Settings'
+};
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const sec = item.dataset.section;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + sec).classList.add('active');
+    document.getElementById('topbarTitle').textContent = sections[sec] || sec;
+    if (sec === 'history') loadHistory();
+  });
+});
+
+// ─── TOAST ───
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  el.innerHTML = `<span>${icons[type]||''}</span><span>${msg}</span>`;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ─── CHARTS ───
+const chartDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+};
+const gridColor = 'rgba(255,255,255,0.04)';
+const gold = '#c9a84c';
+const goldLight = '#e8c97a';
+
+let trendChart, donutChart, barChart, polarChart, lineChart2;
+
+function initCharts() {
+  const trendCtx = document.getElementById('trendChart').getContext('2d');
+  trendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [{ label: 'Avg Rating', data: [],
+      borderColor: gold, backgroundColor: 'rgba(201,168,76,0.08)',
+      fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: gold }] },
+    options: { ...chartDefaults,
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: '#6e6b64', maxTicksLimit: 8 } },
+        y: { grid: { color: gridColor }, ticks: { color: '#6e6b64' }, min: 0, max: 5,
+             suggestedMin: 1, suggestedMax: 5 }
+      }
+    }
+  });
+
+  const donutCtx = document.getElementById('donutChart').getContext('2d');
+  donutChart = new Chart(donutCtx, {
+    type: 'doughnut',
+    data: { labels: ['1★','2★','3★','4★','5★'], datasets: [{
+      data: [0,0,0,0,0],
+      backgroundColor: ['#e05252','#e0a052','#c9a84c','#52a1e0','#4ec994'],
+      borderWidth: 0 }] },
+    options: { ...chartDefaults,
+      plugins: { legend: { display: true, position: 'bottom',
+        labels: { color: '#6e6b64', usePointStyle: true, pointStyleWidth: 8 } } },
+      cutout: '65%'
+    }
+  });
+
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: { labels: [], datasets: [{ data: [],
+      backgroundColor: 'rgba(201,168,76,0.3)',
+      borderColor: gold,
+      borderWidth: 2, borderRadius: 6 }] },
+    options: { ...chartDefaults,
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: '#6e6b64' } },
+        y: { grid: { color: gridColor }, ticks: { color: '#6e6b64' }, min: 0, max: 5 }
+      }
+    }
+  });
+
+  const polarCtx = document.getElementById('polarChart').getContext('2d');
+  polarChart = new Chart(polarCtx, {
+    type: 'polarArea',
+    data: { labels: ['1★','2★','3★','4★','5★'], datasets: [{
+      data: [0,0,0,0,0],
+      backgroundColor: ['rgba(224,82,82,0.4)','rgba(224,160,82,0.4)','rgba(201,168,76,0.4)','rgba(82,161,224,0.4)','rgba(78,201,148,0.4)'],
+      borderWidth: 0 }] },
+    options: { ...chartDefaults,
+      plugins: { legend: { display: true, position: 'right',
+        labels: { color: '#6e6b64', usePointStyle: true } } },
+      scales: { r: { grid: { color: gridColor }, ticks: { display: false } } }
+    }
+  });
+
+  const lineCtx2 = document.getElementById('lineChart2').getContext('2d');
+  lineChart2 = new Chart(lineCtx2, {
+    type: 'line',
+    data: { labels: [], datasets: [{ label: 'Avg', data: [],
+      borderColor: goldLight, backgroundColor: 'rgba(232,201,122,0.07)',
+      fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: goldLight }] },
+    options: { ...chartDefaults,
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: '#6e6b64', maxTicksLimit: 10 } },
+        y: { grid: { color: gridColor }, ticks: { color: '#6e6b64' }, min: 0, max: 5 }
+      }
+    }
+  });
+}
+
+// ─── UPDATE UI FROM STATS ───
+let allFeedItems = [];
+let ratingDist = [0,0,0,0,0];
+
+function updateUI(stats) {
+  // KPI
+  animateNum('kpiTotal', stats.total);
+  document.getElementById('kpiAvg').textContent = stats.avg_rating ? stats.avg_rating.toFixed(2) : '—';
+  animateNum('kpiUsers', stats.user_count);
+  document.getElementById('kpiCats').textContent = stats.by_category.length;
+
+  // Trend chart
+  if (stats.trend && stats.trend.length) {
+    trendChart.data.labels = stats.trend.map(t => t.day.slice(5));
+    trendChart.data.datasets[0].data = stats.trend.map(t => t.avg ? +t.avg.toFixed(2) : null);
+    trendChart.update();
+    lineChart2.data.labels = stats.trend.map(t => t.day.slice(5));
+    lineChart2.data.datasets[0].data = stats.trend.map(t => t.avg ? +t.avg.toFixed(2) : null);
+    lineChart2.update();
+  }
+
+  // Category list & bar chart
+  const catList = document.getElementById('catList');
+  if (stats.by_category.length === 0) {
+    catList.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div>No data yet</div>';
+  } else {
+    catList.innerHTML = stats.by_category.map(c => `
+      <div class="cat-row">
+        <div class="cat-meta">
+          <span class="cat-name">${c.category}</span>
+          <span class="cat-score">${c.avg ? (+c.avg).toFixed(1) : '—'}</span>
+        </div>
+        <div class="cat-bar-bg">
+          <div class="cat-bar-fill" style="width:${c.avg ? (c.avg/5*100) : 0}%"></div>
+        </div>
+      </div>
+    `).join('');
+
+    barChart.data.labels = stats.by_category.map(c => c.category.split(' ')[0]);
+    barChart.data.datasets[0].data = stats.by_category.map(c => c.avg ? +c.avg.toFixed(2) : 0);
+    barChart.update();
+
+    // Analytics extras
+    const best = stats.by_category.reduce((a,b) => (+b.avg||0) > (+a.avg||0) ? b : a, stats.by_category[0]);
+    document.getElementById('bestCat').textContent = best ? best.category : '—';
+    document.getElementById('monthAvg').textContent = stats.avg_rating ? stats.avg_rating.toFixed(2) : '—';
+  }
+
+  // Score grid in submit section
+  const scoreGrid = document.getElementById('scoreGrid');
+  const catIcons = {
+    'Product Quality':'📦','Customer Support':'🎧','Delivery Speed':'🚀',
+    'User Experience':'✨','Value for Money':'💎','Overall Experience':'🌟'
+  };
+  if (stats.by_category.length) {
+    scoreGrid.innerHTML = stats.by_category.map(c => `
+      <div class="score-item">
+        <span class="score-emoji">${catIcons[c.category]||'⭐'}</span>
+        <span class="score-name">${c.category}</span>
+        <div style="text-align:right">
+          <div class="score-value">${c.avg ? (+c.avg).toFixed(1) : '—'}</div>
+          <div class="score-count">${c.count} reviews</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Recent feed
+  if (stats.recent && stats.recent.length) {
+    const liveFeed = document.getElementById('liveFeed');
+    const existing = liveFeed.querySelector('.empty-state');
+    if (existing) liveFeed.innerHTML = '';
+
+    // Only add items not already shown (on initial load)
+    if (allFeedItems.length === 0) {
+      stats.recent.forEach(item => addFeedItem(item, false));
+    }
+  }
+
+  // Polar + distribution
+  // recompute from donut data
+  updateDonut();
+
+  // Analytics KPIs
+  const total = stats.total || 1;
+  const pos = ratingDist[3] + ratingDist[4];
+  document.getElementById('fiveStarCount').textContent = ratingDist[4] || 0;
+  document.getElementById('positiveRate').textContent = total ? Math.round(pos/total*100)+'%' : '—';
+}
+
+function updateDonut() {
+  donutChart.data.datasets[0].data = ratingDist;
+  donutChart.update();
+  polarChart.data.datasets[0].data = ratingDist;
+  polarChart.update();
+
+  // Distribution bars
+  const total = ratingDist.reduce((a,b)=>a+b,0);
+  const labels = ['1★','2★','3★','4★','5★'];
+  const colors = ['#e05252','#e0a052','#c9a84c','#52a1e0','#4ec994'];
+  document.getElementById('distributionBars').innerHTML = ratingDist.map((v,i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span style="font-size:.75rem;color:var(--muted);width:18px">${labels[i]}</span>
+      <div style="flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${total?v/total*100:0}%;background:${colors[i]};border-radius:3px;transition:width .6s ease"></div>
+      </div>
+      <span style="font-size:.72rem;color:var(--muted);width:24px;text-align:right">${v}</span>
+    </div>
+  `).join('');
+}
+
+function animateNum(id, target) {
+  const el = document.getElementById(id);
+  const start = parseInt(el.textContent) || 0;
+  const step = (target - start) / 20;
+  let current = start;
+  const interval = setInterval(() => {
+    current += step;
+    if ((step > 0 && current >= target) || (step < 0 && current <= target)) {
+      el.textContent = target;
+      clearInterval(interval);
+    } else {
+      el.textContent = Math.round(current);
+    }
+  }, 30);
+}
+
+function starsHTML(rating) {
+  return [1,2,3,4,5].map(i =>
+    `<span class="star ${i <= rating ? 'filled' : 'empty'}">★</span>`
+  ).join('');
+}
+
+function addFeedItem(item, prepend = true) {
+  allFeedItems.unshift(item);
+  if (allFeedItems.length > 50) allFeedItems.pop();
+  document.getElementById('feedCount').textContent = allFeedItems.length;
+
+  // Increment distribution
+  if (item.rating >= 1 && item.rating <= 5) {
+    ratingDist[item.rating - 1]++;
+    updateDonut();
+  }
+
+  const liveFeed = document.getElementById('liveFeed');
+  const feedTable = document.getElementById('feedTable');
+  const empty = liveFeed.querySelector('.empty-state');
+  if (empty) liveFeed.innerHTML = '';
+  const emptyRow = feedTable.querySelector('td[colspan]');
+  if (emptyRow) feedTable.innerHTML = '';
+
+  const timeStr = item.created_at ? item.created_at.split(' ').pop().slice(0,5) : 'Now';
+  const sentimentChip = `<span class="chip ${item.sentiment||'neutral'}">${item.sentiment||'neutral'}</span>`;
+
+  // Live feed widget
+  const feedDiv = document.createElement('div');
+  feedDiv.className = 'feed-item';
+  feedDiv.innerHTML = `
+    <div class="feed-top">
+      <span class="feed-name">👤 ${item.name}${item.company ? ` <span style="color:var(--muted);font-weight:400">· ${item.company}</span>` : ''}</span>
+      <span class="feed-time">${timeStr}</span>
+    </div>
+    <div class="feed-cat">🏷️ ${item.category}</div>
+    <div class="stars">${starsHTML(item.rating)}</div>
+    ${item.comment ? `<div class="feed-comment">"${item.comment}"</div>` : ''}
+  `;
+  if (prepend) liveFeed.insertBefore(feedDiv, liveFeed.firstChild);
+  else liveFeed.appendChild(feedDiv);
+
+  // Table row
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><strong>${item.name}</strong>${item.company ? `<div style="font-size:.72rem;color:var(--muted)">${item.company}</div>` : ''}</td>
+    <td>${item.category}</td>
+    <td><div class="stars">${starsHTML(item.rating)}</div></td>
+    <td style="max-width:220px;color:var(--muted)">${item.comment||'—'}</td>
+    <td>${sentimentChip}</td>
+    <td style="color:var(--muted)">${item.created_at||'—'}</td>
+  `;
+  if (prepend) feedTable.insertBefore(tr, feedTable.firstChild);
+  else feedTable.appendChild(tr);
+}
+
+// ─── SUBMIT FEEDBACK ───
+async function submitFeedback() {
+  const cat = document.getElementById('fbCategory').value;
+  const ratingEl = document.querySelector('input[name="rating"]:checked');
+  const comment = document.getElementById('fbComment').value;
+  const alertEl = document.getElementById('submitAlert');
+  alertEl.innerHTML = '';
+
+  if (!cat) { alertEl.innerHTML = '<div class="inline-alert error">Please select a category.</div>'; return; }
+  if (!ratingEl) { alertEl.innerHTML = '<div class="inline-alert error">Please select a rating.</div>'; return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: cat, rating: parseInt(ratingEl.value), comment })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alertEl.innerHTML = '<div class="inline-alert success">✅ Feedback submitted! Dashboard updated live.</div>';
+      document.getElementById('fbCategory').value = '';
+      document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+      document.getElementById('fbComment').value = '';
+      toast('Feedback submitted successfully!', 'success');
+    } else {
+      alertEl.innerHTML = `<div class="inline-alert error">${data.error}</div>`;
+    }
+  } catch {
+    alertEl.innerHTML = '<div class="inline-alert error">Network error.</div>';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Submit Feedback →';
+}
+
+// ─── HISTORY ───
+async function loadHistory() {
+  const tbody = document.getElementById('historyTable');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Loading…</td></tr>';
+  try {
+    const res = await fetch('/api/my-feedback');
+    const data = await res.json();
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div>You haven\'t submitted any feedback yet</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map((f,i) => `
+      <tr>
+        <td style="color:var(--muted)">#${data.length - i}</td>
+        <td>${f.category}</td>
+        <td><div class="stars">${starsHTML(f.rating)}</div></td>
+        <td style="max-width:200px;color:var(--muted)">${f.comment||'—'}</td>
+        <td><span class="chip ${f.sentiment}">${f.sentiment}</span></td>
+        <td style="color:var(--muted);white-space:nowrap">${f.created_at}</td>
+      </tr>
+    `).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="inline-alert error">Failed to load</div></td></tr>';
+  }
+}
+
+// ─── SOCKET.IO ───
+const socket = io();
+socket.on('connect', () => {
+  console.log('🟢 Live sync connected');
+});
+socket.on('stats_update', (stats) => {
+  updateUI(stats);
+});
+socket.on('new_feedback', (item) => {
+  addFeedItem(item, true);
+  toast(`New ${item.rating}★ feedback on ${item.category}`, 'info');
+});
+socket.on('disconnect', () => {
+  toast('Live sync disconnected — reconnecting…', 'error');
+});
+
+// ─── BOOTSTRAP ───
+initCharts();
+fetch('/api/stats').then(r => r.json()).then(updateUI).catch(console.error);
+</script>
+</body>
+</html>
