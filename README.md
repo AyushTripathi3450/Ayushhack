@@ -12,8 +12,8 @@
 
 ## 🌐 Live Demo
 
-🔗 **Deployed Website →** `your deployed link here`
-🔗 **GitHub Repository →** `your github link here`
+🔗 **Deployed Website →** `https://feedback-system-tjsn.onrender.com`
+🔗 **GitHub Repository →** `https://github.com/AyushTripathi3450/Ayushhack`
 
 ---
 
